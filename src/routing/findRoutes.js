@@ -1,6 +1,9 @@
 import { stations, lines } from './mrt.json';
 // const Graph = require('node-all-paths');
-import Graph from 'node-all-paths';
+// import Graph from 'node-all-paths';
+import Graph from './../services/graph';
+import Node from './../services/node';
+
 // TODO: find a way to calculate nearest MRT station by comparing (origin, destination) params to {lat, lng} values in mrt.json stations obj
 // TODO: first result will be {type: "walk"}, check if there is direct MRT line from origin to destination
 // TODO: if not, find out interchange station. For eg, origin station on CC line, destination station on DT line, find CC-DT interchange
@@ -41,16 +44,78 @@ import Graph from 'node-all-paths';
 */
 
 export default function findRoutes(origin, destination) {
-	const originStation = getClosestStation(origin);
-	const destinationStation = getClosestStation(destination);
+	// const originStation = getClosestStation(origin);
+	// const destinationStation = getClosestStation(destination);
 
-	const MRTLRTGraph = buildGraph();
+	const originStation = 'tampines';
+	const destinationStation = 'dhoby_ghaut';
+
+	const graph = buildGraph();
 	
-	console.log('originStation: ', originStation);
-	console.log('destinationStation: ', destinationStation);
-	console.log('MRTLRTGraph: ', MRTLRTGraph);
+	console.log('graph: ', graph);
 
-	console.log(MRTLRTGraph.path('bishan', 'orchard'));
+	let routes = [];
+
+	if (originStation === destinationStation) {
+		console.log('nearest MRT station is same, just walk!');
+	}
+
+	if (graph.hasOwnProperty(originStation)) {
+		// graph[originStation].adjacent_to
+	}
+
+
+	// *** BFS METHOD ***
+	// console.log('originStation: ', originStation);
+	// console.log('destinationStation: ', destinationStation);
+	// MRTLRTGraph.reset();
+
+	// let start = MRTLRTGraph.setStart(originStation);	// dhoby ghaut
+	// let end = MRTLRTGraph.setEnd(destinationStation);	// king albert park
+
+	// let queue = [];
+
+	// start.searched = true;
+	// queue.push(start);	// [dhoby_ghaut]
+
+	// while (queue.length) {
+	// 	let current = queue.shift();	// dhoby_ghaut node
+	// 	console.log('current.value: ', current.value);
+	// 	if(current === end) {
+	// 		console.log('Found ' + current.value);
+	// 		break;
+	// 	}
+	// 	let edges = current.edges;
+	// 	console.log('edges: ', edges);
+	// 	edges.forEach((edge, index) => {
+	// 		let neighbour = edge;
+	// 		console.log('edge: ', edge);
+	// 		if (!neighbour.searched) {
+	// 			console.log(`********* ${neighbour.value} not searched and pushing to queue *********`);
+	// 			neighbour.searched = true;
+	// 			neighbour.parent = current;
+	// 			queue.push(neighbour);
+	// 		} else {
+	// 			console.log(`######### ${neighbour.value} was searched before and not pushed to queue #########`);
+	// 		}
+	// 	})
+	// }
+
+	// let route = [];
+	// route.push(end);
+	// let next = end.parent;
+	// while (next !== null) {
+	// 	route.push(next);
+	// 	next = next.parent;
+	// }
+
+	// let text = '';
+	// for (let i = route.length - 1; i >= 0; i--) {
+	// 	let step = route[i];
+	// 	text += (i === 0) ? step.value : step.value + ' -> ';
+	// }
+
+	// console.log('text: ', text);
 
 	return [ { steps: [
 		{ type: 'walk', from: 'origin', to: 'destination' }
@@ -79,8 +144,7 @@ export function getClosestStation(coordinates) {
 			distance = getDistance(coordinates, { lat: station.lat, lng: station.lng })
 		}
 	})
-
-	return closestStation.name;
+	return closestStation.name.replace(/ /g, '_').toLowerCase();
 }
 
 // function takes in {lat, lng} of 2 coords and returns the distance in km
@@ -106,39 +170,72 @@ export function degreesToRadian(value) {
 
 // get a nested array of all MRT and LRT lines
 export function getAllLines() {
-	const linesArray = Object.keys(lines);
-	let allLines = [];
+	// const linesArray = Object.keys(lines);
+	// let allLines = [];
 
-	linesArray.forEach(line => {
-		allLines.push(lines[line].route);
-	})
+	// linesArray.forEach(line => {
+	// 	allLines.push(lines[line].route);
+	// })
+	const allLines = [];
 
+	for (let key in lines) {
+		allLines.push(lines[key]);
+	}
+	console.log('allLines: ', allLines);
 	return allLines;
 }
 
 // Graph of MRT and LRT stations, where each station is a node
 // each station will have a value which is an object that contains stations adjacent to it
-export function buildGraph() {
-	const stationsObj = {};
-	const allLines = getAllLines();
-	const graph = new Graph();
+// *** BFS METHOD ***
+// export function buildGraph() {
+// 	const allLines = getAllLines();
+// 	const graph = new Graph();
 
-	allLines.forEach(line => {
+// 	allLines.forEach(line => {
+// 		let lineName = line.name;
+// 		let stations = line.route;
+// 		let lineNode = new Node(lineName);
+
+// 		graph.addNode(lineNode);
+
+// 		stations.forEach((station, index) => {
+			
+// 			let stationNode = graph.getNode(station);
+// 			if (stationNode === undefined) {
+// 				stationNode = new Node(station);
+// 			}
+// 			graph.addNode(stationNode);
+// 			lineNode.addEdge(stationNode);
+// 		})
+// 	});
+
+// 	console.log('graph: ', graph);
+
+// 	return graph;
+// }
+
+export function buildGraph() {
+	let linesStations = [];
+	let graph = {};
+	for (let key in lines) {
+		linesStations.push(lines[key]['route']);
+	}
+	linesStations.forEach(line => {
 		line.forEach((station, index) => {
-			if (!stationsObj.hasOwnProperty(station)) {
-				stationsObj[station] = {};
+			if (!graph.hasOwnProperty(station)) {
+				graph[station] = { adjacent_to: [] };
 			}
-			if (line[index - 1] !== undefined && !stationsObj[station].hasOwnProperty(line[index - 1])) {
-				stationsObj[station][line[index - 1]] = 1;
+			let previousStation = line[index - 1];
+			let nextStation = line[index + 1];
+			if(previousStation !== undefined && !graph[station].adjacent_to.includes[previousStation]) {
+				graph[station].adjacent_to.push(previousStation);
 			}
-			if (line[index + 1] !== undefined && !stationsObj[station].hasOwnProperty(line[index + 1])) {
-				stationsObj[station][line[index + 1]] = 1;
+			if(nextStation !== undefined && !graph[station].adjacent_to.includes[nextStation]) {
+				graph[station].adjacent_to.push(nextStation);
 			}
 		})
-	});
+	})
 
-	for (let key in stationsObj) {
-		graph.addNode(key, stationsObj[key]);
-	}
 	return graph;
 }
