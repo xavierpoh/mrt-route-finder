@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import findRoutes from '../../routing/findRoutes';
 import './RoutesFinder.scss';
 import SearchBox from './../SearchBox/SearchBox';
+import SuggestedRoute from '../SuggestedRoute/SuggestedRoute';
 
 // TODO: get {lat, lng} value of user input and pass it to findRoutes.js
 
@@ -39,7 +40,6 @@ class RoutesFinder extends Component {
 
   // Gets called when user clicks 'Find Routes' button
   handleSubmit() {
-    console.log('find routes!');
     // if(this.checkValidEntry()) {
       console.log('valid address input');
       let suggestedRoutesList = findRoutes({ lat: 1.298593, lng: 103.845909 }, { lat: 1.335419, lng: 103.7837309 });
@@ -70,7 +70,10 @@ class RoutesFinder extends Component {
 
         <div className="results-container">
           <h3>Suggested Routes</h3>
-          <div id='results' />
+          {
+            this.state.suggestedRoutesList &&
+            this.state.suggestedRoutesList.map((route, index) => <SuggestedRoute key={index} route={route} />)
+          }
         </div>
       </div>
     )

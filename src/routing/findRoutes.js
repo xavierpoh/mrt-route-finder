@@ -1,125 +1,183 @@
 import { stations, lines } from './mrt.json';
-// const Graph = require('node-all-paths');
-// import Graph from 'node-all-paths';
 import Graph from './../services/graph';
 import Node from './../services/node';
 
-// TODO: find a way to calculate nearest MRT station by comparing (origin, destination) params to {lat, lng} values in mrt.json stations obj
-// TODO: first result will be {type: "walk"}, check if there is direct MRT line from origin to destination
-// TODO: if not, find out interchange station. For eg, origin station on CC line, destination station on DT line, find CC-DT interchange
-// TODO: calculate number of stops by finding difference of array position of stations
-
-/*
-	Returns the best routes between the origin and destination.
-
-	Arguments origin and destination are { lat, lng } objects.
-	Returns an array of the best routes. You may define "best" using any reasonable metric and document your definition.
-
-	Each route is an object which must contain a "steps" array. You may add additional properties as needed.
-	Each step can represent a "walk", "ride" or "change", and must have at least the following properties:
-	- { type: "walk", from: <stationId> or "origin", to: <stationId> or "destination" }
-	- { type: "ride", line: <lineId>, from: <stationId>, to: <stationId> }
-	- { type: "change", station: <stationId>, from: <lineId>, to: <lineId> }
-	You may add additional properties as needed.
-
-	Example:
-
-	findRoutes({ lat: 1.322522, lng: 103.815403 }, { lat: 1.29321, lng: 103.852216 })
-
-	should return something like:
-
-	[
-		{ steps: [
-			{ type: "walk", from: "origin", to: "botanic_gardens" },
-			{ type: "ride", line: "CC", from: "botanic_gardens", to: "buona_vista" },
-			{ type: "change", station: "buona_vista", from: "CC", to: "EW" },
-			{ type: "ride", line: "EW", from: "buona_vista", to: "bugis" },
-			{ type: "walk", from: "bugis", to: "destination" }
-		] },
-		{ steps: [
-			// worse route
-		] }
-	]
-
-*/
-
 export default function findRoutes(origin, destination) {
-	// const originStation = getClosestStation(origin);
-	// const destinationStation = getClosestStation(destination);
+	const originStation = getClosestStation(origin);
+	const destinationStation = getClosestStation(destination);
 
-	const originStation = 'tampines';
-	const destinationStation = 'dhoby_ghaut';
+	const MRTLRTGraph = buildGraph();
+	/*
+	const originStation = 'sengkang';
+	const destinationStation = 'serangoon';
+
+	if (origin === destination) {
+		console.log('Nearest MRT station is the same, just walk!');
+	}
 
 	const graph = buildGraph();
 	
 	console.log('graph: ', graph);
 
-	let routes = [];
+	let allRoutes = findRoute(originStation, destinationStation);
 
-	if (originStation === destinationStation) {
-		console.log('nearest MRT station is same, just walk!');
-	}
+	console.log('allRoutes: ', allRoutes);
+	
+	// find single route
+	// return the route array if destination is found
+	function findRoute(start, end, route = []) {
+		console.log('start: ', start);
+		console.log('end: ', end);
+		console.log('route: ', route);
+		let allRoutes = [];
 
-	if (graph.hasOwnProperty(originStation)) {
-		// graph[originStation].adjacent_to
-	}
+		route = route.slice();
+		route.push(start);
+		
+		if (start === end) {
+			return route;
+		}
+
+		if (graph.hasOwnProperty(start)) {
+			// graph[originStation].adjacent_to
+			graph[start].adjacent_to.forEach(neighbour => {
+				console.log('neighbour: ', neighbour);
+				if (!route.includes(neighbour)) {
+					let newRoute = findRoute(neighbour, end, route);
+	
+					if(newRoute.length !== 0) {
+						allRoutes.push(newRoute);
+					}
+				}
+			})
+		}
+
+		return allRoutes;
+	
+	}*/
+
+
 
 
 	// *** BFS METHOD ***
-	// console.log('originStation: ', originStation);
-	// console.log('destinationStation: ', destinationStation);
-	// MRTLRTGraph.reset();
+	console.log('originStation: ', originStation);
+	console.log('destinationStation: ', destinationStation);
+	MRTLRTGraph.reset();
 
-	// let start = MRTLRTGraph.setStart(originStation);	// dhoby ghaut
-	// let end = MRTLRTGraph.setEnd(destinationStation);	// king albert park
+	let start = MRTLRTGraph.setStart(originStation);	// dhoby ghaut
+	let end = MRTLRTGraph.setEnd(destinationStation);	// king albert park
 
-	// let queue = [];
+	let queue = [];
 
-	// start.searched = true;
-	// queue.push(start);	// [dhoby_ghaut]
+	start.searched = true;
+	queue.push(start);	// [dhoby_ghaut]
 
-	// while (queue.length) {
-	// 	let current = queue.shift();	// dhoby_ghaut node
-	// 	console.log('current.value: ', current.value);
-	// 	if(current === end) {
-	// 		console.log('Found ' + current.value);
-	// 		break;
-	// 	}
-	// 	let edges = current.edges;
-	// 	console.log('edges: ', edges);
-	// 	edges.forEach((edge, index) => {
-	// 		let neighbour = edge;
-	// 		console.log('edge: ', edge);
-	// 		if (!neighbour.searched) {
-	// 			console.log(`********* ${neighbour.value} not searched and pushing to queue *********`);
-	// 			neighbour.searched = true;
-	// 			neighbour.parent = current;
-	// 			queue.push(neighbour);
-	// 		} else {
-	// 			console.log(`######### ${neighbour.value} was searched before and not pushed to queue #########`);
-	// 		}
-	// 	})
-	// }
+	while (queue.length) {
+		let current = queue.shift();	// dhoby_ghaut node
+		// console.log('current.value: ', current.value);
+		if(current === end) {
+			// console.log('Found ' + current.value);
+			break;
+		}
+		let edges = current.edges;
+		// console.log('edges: ', edges);
+		edges.forEach(edge => {
+			let neighbour = edge;
+			// console.log('edge: ', edge);
+			if (!neighbour.searched) {
+				// console.log(`********* ${neighbour.value} not searched and pushing to queue *********`);
+				neighbour.searched = true;
+				neighbour.parent = current;
+				queue.push(neighbour);
+			} else {
+				// console.log(`######### ${neighbour.value} was searched before and not pushed to queue #########`);
+			}
+		})
+	}
 
-	// let route = [];
-	// route.push(end);
-	// let next = end.parent;
-	// while (next !== null) {
-	// 	route.push(next);
-	// 	next = next.parent;
-	// }
+	let route = [];
+	route.push(end);
+	let next = end.parent;
+	while (next !== null) {
+		route.push(next);
+		next = next.parent;
+	}
+	
+	let suggestedSteps = [];
+	
+	const allLines = getAllLines();
+	const allLinesNames = allLines.map(line => line.name.replace(/ /g, '_').toLowerCase());
+	const lineCodes = Object.keys(lines);
+	const lineColours = lineCodes.map(code => {
+		return lines[code].color;
+	});
 
-	// let text = '';
-	// for (let i = route.length - 1; i >= 0; i--) {
-	// 	let step = route[i];
-	// 	text += (i === 0) ? step.value : step.value + ' -> ';
-	// }
+	/*
+	Map line code and colour to line name
+	{ "circle_line": {
+		colour: "#90",
+		line_code: "CC"
+	}}
+	*/
+	const lineMapping = {};
+	allLinesNames.forEach((lineName, index) => {
+		let key = lineName;
+		lineMapping[key] = {
+			colour: lineColours[index],
+			line_code: lineCodes[index]
+		}
+	});
 
-	// console.log('text: ', text);
+	let suggestedStations = [];
+	let suggestedLines = [];
+	let suggestedStops = [];
 
-	return [ { steps: [
-		{ type: 'walk', from: 'origin', to: 'destination' }
-	] } ];
+	for (let i = route.length - 1; i >= 0; i--) {
+		let step = route[i].value;
+		suggestedSteps.push(step);
+	}
+
+	
+	suggestedSteps.forEach(step => {
+		if(allLinesNames.includes(step)) {
+			suggestedLines.push(step);
+		} else {
+			suggestedStations.push(step);
+		}
+	})
+	
+	
+	suggestedLines.forEach((line, index) => {
+		let key = line;
+		let startStation = suggestedStations[index];
+		let endStation = suggestedStations[index + 1];
+		suggestedStops.push(getNumberOfStops(lineMapping[key].line_code, startStation, endStation));
+	})
+	
+	console.log('suggestedSteps: ', suggestedSteps);
+	console.log('suggestedLines: ', suggestedLines);
+	console.log('suggestedStations: ', suggestedStations);
+	console.log('suggestedStops: ', suggestedStops);
+
+	let suggestedRoute = [];
+	suggestedLines.forEach((line, index) => {
+		let singleLineRoute = {
+			from: suggestedStations[index],
+			to: suggestedStations[index + 1],
+			stops: suggestedStops[index],
+			line_code: lineMapping[line].line_code,
+			line_name: line
+		};
+		suggestedRoute.push(singleLineRoute);
+	});
+
+	console.log('suggestedRoute: ', suggestedRoute);
+
+	return suggestedRoute;
+}
+
+export function getNumberOfStops(lineCode, startStation, endStation) {
+	return Math.abs(lines[lineCode].route.indexOf(endStation) - lines[lineCode].route.indexOf(startStation));
 }
 
 export function getClosestStation(coordinates) {
@@ -181,40 +239,38 @@ export function getAllLines() {
 	for (let key in lines) {
 		allLines.push(lines[key]);
 	}
-	console.log('allLines: ', allLines);
 	return allLines;
 }
 
 // Graph of MRT and LRT stations, where each station is a node
 // each station will have a value which is an object that contains stations adjacent to it
 // *** BFS METHOD ***
-// export function buildGraph() {
-// 	const allLines = getAllLines();
-// 	const graph = new Graph();
+export function buildGraph() {
+	const allLines = getAllLines();
+	const graph = new Graph();
 
-// 	allLines.forEach(line => {
-// 		let lineName = line.name;
-// 		let stations = line.route;
-// 		let lineNode = new Node(lineName);
+	allLines.forEach(line => {
+		let lineName = line.name.replace(/ /g, '_').toLowerCase();
+		let stations = line.route;
+		let lineNode = new Node(lineName);
 
-// 		graph.addNode(lineNode);
+		graph.addNode(lineNode);
 
-// 		stations.forEach((station, index) => {
+		stations.forEach((station, index) => {
 			
-// 			let stationNode = graph.getNode(station);
-// 			if (stationNode === undefined) {
-// 				stationNode = new Node(station);
-// 			}
-// 			graph.addNode(stationNode);
-// 			lineNode.addEdge(stationNode);
-// 		})
-// 	});
+			let stationNode = graph.getNode(station);
+			if (stationNode === undefined) {
+				stationNode = new Node(station);
+			}
+			graph.addNode(stationNode);
+			lineNode.addEdge(stationNode);
+		})
+	});
 
-// 	console.log('graph: ', graph);
+	return graph;
+}
 
-// 	return graph;
-// }
-
+/*
 export function buildGraph() {
 	let linesStations = [];
 	let graph = {};
@@ -238,4 +294,4 @@ export function buildGraph() {
 	})
 
 	return graph;
-}
+}*/
