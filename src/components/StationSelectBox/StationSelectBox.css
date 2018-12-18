@@ -1,0 +1,21 @@
+
+.capitalize {
+  text-transform: capitalize;
+  display: inline-block;
+}
+
+.label-width {
+  width: 60px;
+  background: #fff;
+  border-right: none;
+  color: #00dbaa;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-weight: 700;
+}
+
+.custom-select {
+  border-left: none;
+}

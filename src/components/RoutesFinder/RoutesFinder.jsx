@@ -1,80 +1,122 @@
 import React, { Component } from 'react';
-import findRoutes from '../../routing/findRoutes';
-import './RoutesFinder.scss';
-import SearchBox from './../SearchBox/SearchBox';
+import findRoutes, { getAllStations } from '../../routing/findRoutes';
+import './RoutesFinder.css';
 import SuggestedRoute from '../SuggestedRoute/SuggestedRoute';
-
-// TODO: get {lat, lng} value of user input and pass it to findRoutes.js
-
-const SEARCHBOX = ['origin', 'destination'];
+import StationSelectBox from '../StationSelectBox/StationSelectBox';
 
 class RoutesFinder extends Component {
 
   constructor(props) {
     super(props);
-    this.handleInputChange = this.handleInputChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
 
     this.state = {
-      originCoordinates: { lat: null, lng: null },
-      destinationCoordinates: { lat: null, lng: null },
+      start: '',
+      end: '',
       suggestedRoutesList: null,
-      isLoading: false
+      stationsList: [],
+      disableSearch: false,
     }
   }
 
-  // Handles user input change in Origin and Destination input fields
-  handleInputChange(type) {
-    console.log('type: ', type);
-    // setTimeout(() => {
-    //   const { SearchBox } = window.google.maps.places;
-    //   const originSearch = new SearchBox(document.getElementById(type));
-    //   originSearch.addListener('places_changed', () => {
-    //     const places = originSearch.getPlaces();
-    //     const location = places[0].geometry.location.toJSON();
-    //     console.log(location);
-    //     type === 'origin' ? this.setState({ originCoordinates: location }) : this.setState({ destinationCoordinates: location }); 
-    //   });
-    // }, 100);
+  componentDidMount() {
+    let stationsList = getAllStations();
+    this.setState({ 
+      start: stationsList[0],
+      end: stationsList[1],
+      stationsList
+    });
   }
 
-  // Gets called when user clicks 'Find Routes' button
-  handleSubmit() {
-    // if(this.checkValidEntry()) {
-      console.log('valid address input');
-      let suggestedRoutesList = findRoutes({ lat: 1.298593, lng: 103.845909 }, { lat: 1.335419, lng: 103.7837309 });
-      // let suggestedRoutesList = findRoutes(this.state.originCoordinates, this.state.destinationCoordinates);
+  handleChange = (event) => {
+    // clear results from previous search
+    if (this.state.suggestedRoutesList) {
+      this.setState({ suggestedRoutesList: null });
+    };
+
+    this.setState({ [event.target.id]: event.target.value }, () => {
+      // if start and end are same stations, disable search and show error message
+      if (this.state.start === this.state.end) {
+        this.setState({ disableSearch: true });
+      } else {
+        this.setState({ disableSearch: false });
+      }
+    });
+    
+  }
+
+  handleSubmit = () => {
+      let suggestedRoutesList = findRoutes(this.state.start, this.state.end);
+
+      // uppercase 'lrt' substring if there is any 
+      suggestedRoutesList.forEach(route => {
+        let lineSubstringArray = route.line_name.split(' ');
+        let lrtIndex = lineSubstringArray.indexOf('lrt');
+        if (lrtIndex !== -1) {
+          lineSubstringArray[lrtIndex] = lineSubstringArray[lrtIndex].toUpperCase();
+          route.line_name = lineSubstringArray.join(' ');
+        }
+      });
+
       this.setState({ suggestedRoutesList });
-    // } else {
-      // TODO: show error message
-      // console.log('invalid address input');
-    // }
-
-  }
-
-  checkValidEntry() {
-    return (this.state.originCoordinates.lat && this.state.originCoordinates.lng && this.state.destinationCoordinates.lat && this.state.destinationCoordinates.lng);
   }
 
   render() {
     return (
       <div className="routes-finder">
 
+        {/* Start of Search section */}
         <div className="search-container">
-          <h3>MRT Routes Finder</h3>
-          {
-            SEARCHBOX.map((type, index) => <SearchBox key={index} type={type} onInputChange={this.handleInputChange} />)
-          }
-          <button onClick={this.handleSubmit}>Find routes</button>
-        </div>
+          <h3 className="main-header bold">MRT Journey Planner</h3>
+          <div className="sub-header">Let's get you somewhere.</div>
+          
+          <StationSelectBox location="start" stationName={this.state.start} stationsList={this.state.stationsList} onInputChange={this.handleChange}/>
+          <StationSelectBox location="end" stationName={this.state.end} stationsList={this.state.stationsList} onInputChange={this.handleChange}/>
 
-        <div className="results-container">
-          <h3>Suggested Routes</h3>
-          {
-            this.state.suggestedRoutesList &&
-            this.state.suggestedRoutesList.map((route, index) => <SuggestedRoute key={index} route={route} />)
-          }
+          <div className="button-container">
+            <button type="button" className="btn search-btn" onClick={this.handleSubmit} disabled={this.state.disableSearch}>Search</button>
+            <div style={{ visibility: this.state.disableSearch ? 'visible' : 'hidden' }} className="error-message">
+              Please select a different start or end point.
+            </div>
+          </div>
         </div>
+        {/* End of Search section */}
+
+        {/* Start of results section */}
+        {
+        this.state.suggestedRoutesList &&
+        <div className="results-container">
+          <h5 className="bold">Suggested Routes</h5>
+            <div className="route-container accordion" id="accordionExample">
+              <div className="brief-route-container card">
+                <div className="card-header" id="headingOne">
+                  <button className="btn collapsed brief-route-btn" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    <ul className="line-code-ul">
+                      {
+                        this.state.suggestedRoutesList.map((route, index) => (
+                          <li className={index < this.state.suggestedRoutesList.length - 1 ? 'add-arrow' : 'no-arrow'} key={index}>
+                            <span className="line-code" style={{ background: route.colour }}>{route.line_code}</span>
+                          </li>
+                        ))
+                      }
+                    </ul>
+                  </button>
+                </div>
+
+                <div id="collapseOne" className="collapse" aria-labelledby="headingOne" data-parent="#accordionExample">
+                  <div className="card-body border-bottom">
+                    {
+                      this.state.suggestedRoutesList.map((route, index) => (
+                        <SuggestedRoute key={index} route={route} />
+                      ))
+                    }
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+          </div>
+        }
+        {/* End of results section */}
       </div>
     )
   }

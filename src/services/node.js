@@ -1,11 +1,13 @@
-export default function Node (value) {
-  this.value = value;
-  this.edges = [];
-  this.searched = false;
-  this.parent = null;
-}
+export default class Node {
+  constructor(value, edges = [], searched = false, parent = null) {
+    this.value = value;
+    this.edges = edges;
+    this.searched = searched;
+    this.parent = parent;
 
-Node.prototype.addEdge = function (neighbour) {
-  this.edges.push(neighbour);
-  neighbour.edges.push(this);
+    this.addEdge = (neighbour) => {
+      this.edges.push(neighbour);
+      neighbour.edges.push(this);
+    }
+  }
 }

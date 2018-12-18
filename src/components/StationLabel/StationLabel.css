@@ -1,0 +1,17 @@
+
+.train-container {
+  display: flex;
+  align-items: center;
+}
+
+.train-icon {
+  background-image: url(../../../public/train.svg);
+  background-size: contain;
+  height: 20px;
+  width: 20px;
+  display: inline-block;
+}
+
+.station-name {
+  margin-left: 6px;
+}

@@ -1,33 +1,33 @@
-export default function Graph () {
-  this.nodes = [];
-  this.graph = {};
-  this.start = null;
-  this.end = null;
-}
+export default class Graph {
+  constructor(nodes = [], graph = {}, start = null, end = null) {
+    this.nodes = nodes;
+    this.graph = graph;
+    this.start = start;
+    this.end = end;
 
-Graph.prototype.addNode = function (node) {
-  this.nodes.push(node);
-  let stationName = node.value;
-  this.graph[stationName] = node;
-}
+    this.addNode = (node) => {
+      this.nodes.push(node);
+      let stationName = node.value;
+      this.graph[stationName] = node;
+    }
 
-Graph.prototype.getNode = function (stationName) {
-  return this.graph[stationName];
-}
+    this.getNode = (stationName) => this.graph[stationName];
 
-Graph.prototype.setStart = function (stationName) {
-  this.start = this.graph[stationName];
-  return this.start;
-}
+    this.setStart = (stationName) => {
+      this.start = this.graph[stationName];
+      return this.start;
+    }
 
-Graph.prototype.setEnd = function (stationName) {
-  this.end = this.graph[stationName];
-  return this.end;
-}
+    this.setEnd = (stationName) => {
+      this.end = this.graph[stationName];
+      return this.end;
+    }
 
-Graph.prototype.reset = function () {
-  this.nodes.forEach(node => {
-    node.searched = false;
-    node.parent = null;
-  })
+    this.reset = () => {
+      this.nodes.forEach(node => {
+        node.searched = false;
+        node.parent = null;
+      });
+    }
+  }
 }

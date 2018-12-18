@@ -2,95 +2,36 @@ import { stations, lines } from './mrt.json';
 import Graph from './../services/graph';
 import Node from './../services/node';
 
-export default function findRoutes(origin, destination) {
-	const originStation = getClosestStation(origin);
-	const destinationStation = getClosestStation(destination);
-
+export default function findRoutes(originStation, destinationStation) {
 	const MRTLRTGraph = buildGraph();
-	/*
-	const originStation = 'sengkang';
-	const destinationStation = 'serangoon';
 
-	if (origin === destination) {
-		console.log('Nearest MRT station is the same, just walk!');
-	}
-
-	const graph = buildGraph();
-	
-	console.log('graph: ', graph);
-
-	let allRoutes = findRoute(originStation, destinationStation);
-
-	console.log('allRoutes: ', allRoutes);
-	
-	// find single route
-	// return the route array if destination is found
-	function findRoute(start, end, route = []) {
-		console.log('start: ', start);
-		console.log('end: ', end);
-		console.log('route: ', route);
-		let allRoutes = [];
-
-		route = route.slice();
-		route.push(start);
-		
-		if (start === end) {
-			return route;
-		}
-
-		if (graph.hasOwnProperty(start)) {
-			// graph[originStation].adjacent_to
-			graph[start].adjacent_to.forEach(neighbour => {
-				console.log('neighbour: ', neighbour);
-				if (!route.includes(neighbour)) {
-					let newRoute = findRoute(neighbour, end, route);
-	
-					if(newRoute.length !== 0) {
-						allRoutes.push(newRoute);
-					}
-				}
-			})
-		}
-
-		return allRoutes;
-	
-	}*/
-
-
-
-
-	// *** BFS METHOD ***
-	console.log('originStation: ', originStation);
-	console.log('destinationStation: ', destinationStation);
+	// reset searched to false
 	MRTLRTGraph.reset();
 
-	let start = MRTLRTGraph.setStart(originStation);	// dhoby ghaut
-	let end = MRTLRTGraph.setEnd(destinationStation);	// king albert park
+	// *** Breadth-First-Search Method ***
+	let start = MRTLRTGraph.setStart(originStation);
+	let end = MRTLRTGraph.setEnd(destinationStation);
 
 	let queue = [];
 
 	start.searched = true;
-	queue.push(start);	// [dhoby_ghaut]
+	queue.push(start);
 
 	while (queue.length) {
-		let current = queue.shift();	// dhoby_ghaut node
-		// console.log('current.value: ', current.value);
+		let current = queue.shift();
+
+	// end station has been found
 		if(current === end) {
-			// console.log('Found ' + current.value);
 			break;
 		}
+
 		let edges = current.edges;
-		// console.log('edges: ', edges);
 		edges.forEach(edge => {
 			let neighbour = edge;
-			// console.log('edge: ', edge);
 			if (!neighbour.searched) {
-				// console.log(`********* ${neighbour.value} not searched and pushing to queue *********`);
 				neighbour.searched = true;
 				neighbour.parent = current;
 				queue.push(neighbour);
-			} else {
-				// console.log(`######### ${neighbour.value} was searched before and not pushed to queue #########`);
 			}
 		})
 	}
@@ -146,105 +87,50 @@ export default function findRoutes(origin, destination) {
 		}
 	})
 	
-	
 	suggestedLines.forEach((line, index) => {
 		let key = line;
 		let startStation = suggestedStations[index];
 		let endStation = suggestedStations[index + 1];
 		suggestedStops.push(getNumberOfStops(lineMapping[key].line_code, startStation, endStation));
 	})
-	
-	console.log('suggestedSteps: ', suggestedSteps);
-	console.log('suggestedLines: ', suggestedLines);
-	console.log('suggestedStations: ', suggestedStations);
-	console.log('suggestedStops: ', suggestedStops);
 
 	let suggestedRoute = [];
 	suggestedLines.forEach((line, index) => {
 		let singleLineRoute = {
-			from: suggestedStations[index],
-			to: suggestedStations[index + 1],
+			from: suggestedStations[index].replace(/_/g, ' '),
+			to: suggestedStations[index + 1].replace(/_/g, ' '),
 			stops: suggestedStops[index],
 			line_code: lineMapping[line].line_code,
-			line_name: line
+			line_name: line.replace(/_/g, ' '),
+			colour: lineMapping[line].colour
 		};
 		suggestedRoute.push(singleLineRoute);
 	});
-
-	console.log('suggestedRoute: ', suggestedRoute);
-
+	
 	return suggestedRoute;
 }
 
+// get number of stops between start and end stations
 export function getNumberOfStops(lineCode, startStation, endStation) {
 	return Math.abs(lines[lineCode].route.indexOf(endStation) - lines[lineCode].route.indexOf(startStation));
 }
 
-export function getClosestStation(coordinates) {
-	// const stationsKeysList = Object.keys(stations);
-	let stationsList = [];
-
-	Object.keys(stations).forEach(key => {
-		stationsList.push(stations[key]);
-	})
-
-	// loop through stationsList to compare distance between user input and station in list
-	// save distance somewhere, if distance of next station is shorter, then replace distance var with the new one
-	// replace closest station with new value also
-	let closestStationIndex = 0;
-	let closestStation = stationsList[0];
-	let distance = getDistance(coordinates, { lat: closestStation.lat, lng: closestStation.lng });
-
-	stationsList.forEach((station, index) => {
-		if (getDistance(coordinates, { lat: station.lat, lng: station.lng }) < distance) {
-			closestStationIndex = index;
-			closestStation = stationsList[index];
-			distance = getDistance(coordinates, { lat: station.lat, lng: station.lng })
-		}
-	})
-	return closestStation.name.replace(/ /g, '_').toLowerCase();
-}
-
-// function takes in {lat, lng} of 2 coords and returns the distance in km
-export function getDistance(inputCoords, stationCoords) {
-	// calculate distance using Haversine formula
-
-	let R = 6371; // Radius of earth in km
-	let dLat = degreesToRadian(stationCoords.lat - inputCoords.lat);
-	let dLon = degreesToRadian(stationCoords.lng - inputCoords.lng);
-	let lat1 = degreesToRadian(inputCoords.lat);
-	let lat2 = degreesToRadian(stationCoords.lat);
-
-	let a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
-	let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-	let d = R * c;
-	return d;
-}
-
-// function converts numeric degrees to radians
-export function degreesToRadian(value) {
-	return value * Math.PI / 180;
-}
-
 // get a nested array of all MRT and LRT lines
 export function getAllLines() {
-	// const linesArray = Object.keys(lines);
-	// let allLines = [];
-
-	// linesArray.forEach(line => {
-	// 	allLines.push(lines[line].route);
-	// })
 	const allLines = [];
 
 	for (let key in lines) {
 		allLines.push(lines[key]);
 	}
+
 	return allLines;
 }
 
-// Graph of MRT and LRT stations, where each station is a node
-// each station will have a value which is an object that contains stations adjacent to it
-// *** BFS METHOD ***
+/*
+build graph where node is either a station or a line
+edges of stations are lines which they are on
+edges of lines are stations which they contain
+*/
 export function buildGraph() {
 	const allLines = getAllLines();
 	const graph = new Graph();
@@ -256,7 +142,7 @@ export function buildGraph() {
 
 		graph.addNode(lineNode);
 
-		stations.forEach((station, index) => {
+		stations.forEach(station => {
 			
 			let stationNode = graph.getNode(station);
 			if (stationNode === undefined) {
@@ -266,32 +152,12 @@ export function buildGraph() {
 			lineNode.addEdge(stationNode);
 		})
 	});
-
 	return graph;
 }
 
-/*
-export function buildGraph() {
-	let linesStations = [];
-	let graph = {};
-	for (let key in lines) {
-		linesStations.push(lines[key]['route']);
-	}
-	linesStations.forEach(line => {
-		line.forEach((station, index) => {
-			if (!graph.hasOwnProperty(station)) {
-				graph[station] = { adjacent_to: [] };
-			}
-			let previousStation = line[index - 1];
-			let nextStation = line[index + 1];
-			if(previousStation !== undefined && !graph[station].adjacent_to.includes[previousStation]) {
-				graph[station].adjacent_to.push(previousStation);
-			}
-			if(nextStation !== undefined && !graph[station].adjacent_to.includes[nextStation]) {
-				graph[station].adjacent_to.push(nextStation);
-			}
-		})
-	})
-
-	return graph;
-}*/
+// returns alphabetically-sorted array of all stations names
+export function getAllStations() {
+	let stationsList = Object.keys(stations);
+	stationsList.sort((a, b) => a.localeCompare(b));
+	return stationsList;
+}
